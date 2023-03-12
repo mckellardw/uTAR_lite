@@ -41,7 +41,10 @@ echo ""
 echo "Reads spanning over splicing junction will join HMM blocks"
 echo "To avoid that, split reads into small blocks before input to groHMM"
 echo "Spliting and sorting reads..."
-bedtools bamtobed -i ${INPUT_BAM} -split | LC_ALL=C sort -k1,1V -k2,2n --buffer-size=${MEM} --parallel=${CORE} | awk '{print $0}' | gzip > ${TMPDIR}/${PREFIX}_split.sorted.bed.gz
+bedtools bamtobed -i ${INPUT_BAM} -split \
+| LC_ALL=C sort -k1,1V -k2,2n --buffer-size=${MEM} --parallel=${CORE} \
+| awk '{print $0}' \
+| gzip > ${TMPDIR}/${PREFIX}_split.sorted.bed.gz
 
 cd ${TMPDIR}
 zcat ${PREFIX}_split.sorted.bed.gz  | awk '{print $0 >> $1".bed"}'
@@ -51,23 +54,29 @@ wc chr*.bed -l > chr_read_count.txt
 echo ""
 echo "Start to run groHMM on each individual chromosome..."
 
+#Old code for running R
+# wait_a_second() {
+# 	joblist=($(jobs -p))
+#     while (( ${#joblist[*]} >= ${CORE} ))
+# 	    do
+# 	    sleep 1
+# 	    joblist=($(jobs -p))
+# 	done
+# }
 
-wait_a_second() {
-	joblist=($(jobs -p))
-    while (( ${#joblist[*]} >= ${CORE} ))
-	    do
-	    sleep 1
-	    joblist=($(jobs -p))
-	done
-}
+# for f in *.bed
+# do
+#   wait_a_second
+#   echo "    " ${f}
+#   R --vanilla --slave --args $(pwd) ${f}  < ${PL}/SingleCellHMM.R  > ${f}.log 2>&1 & pids+=($!)
+# done
+# wait "${pids[@]}"
 
-for f in *.bed
-do
-  wait_a_second
-  echo "    " ${f}
-  R --vanilla --slave --args $(pwd) ${f}  < ${PL}/SingleCellHMM.R  > ${f}.log 2>&1 & pids+=($!)
-done
-wait "${pids[@]}"
+# Parallelized:
+## Use find command to find all the bed files in the current directory and its subdirectories.
+## Pipe the output to parallel to run R commands in parallel.
+find . -name "*.bed" \
+| parallel -j ${CORE} 'echo "    " {}; R --vanilla --slave --args $(pwd) {} < ${PL}/SingleCellHMM.R > {}.log 2>&1'
 
 
 echo ""
@@ -120,7 +129,6 @@ echo ""
 echo "Link the final TAR_reads.bed.gz file to the working directory"
 cd ..
 ln -s ${TMPDIR}/TAR_reads.bed.gz .
-
 
 echo ""
 echo "Move intermediate files to  ${TMPDIR}/toremove ..."
