@@ -2,9 +2,17 @@
 args=(commandArgs(TRUE))
 inputRefFlat<-args[1]
 
-TAR.refFlat <- read.delim(inputRefFlat, header=FALSE)
+TAR.refFlat <- read.delim(
+  inputRefFlat,
+  header=FALSE
+)
 
-TAR.gtf<-data.frame(matrix(ncol = ncol(TAR.refFlat),nrow = nrow(TAR.refFlat)))
+TAR.gtf<-data.frame(
+  matrix(
+    ncol = ncol(TAR.refFlat),
+    nrow = nrow(TAR.refFlat)
+  )
+)
 TAR.gtf$X1<-TAR.refFlat$V3 #seqname
 TAR.gtf$X2<-"TAR_HMM" #source
 TAR.gtf$X3<-"exon"
@@ -21,4 +29,11 @@ TAR.gtf$X9<-paste0(
   )
 TAR.gtf<-TAR.gtf[,1:9]
 
-write.table(TAR.gtf,file=paste0(inputRefFlat,".gtf"),row.names=F,col.names = F,quote=F,sep="\t")
+write.table(
+  TAR.gtf,
+  file=paste0(inputRefFlat,".gtf"),
+  row.names=F,
+  col.names = F,
+  quote=F,
+  sep="\t"
+)

@@ -74,15 +74,15 @@ checkIfExistGene2 <- function(input,gene_ref){
 }
 
 
-#UNCOMMENT BELOW BEFORE EXITING
 # MAKE SURE CHROM IN REFERENCE AND HMM BED MATCH EACH OTHER
+#TODO- refactor so we don't need refFlat format, and can directly load in .gtf
 args=(commandArgs(TRUE))
 inputRefFlat <- args[1]
 HMMbedFile <- args[2]
 num_cores <- as.numeric(args[3])
 
 refName <- unlist(strsplit(inputRefFlat,"/"))[length(unlist(strsplit(inputRefFlat,"/")))]
-# read in hg_38 ref genes
+# read in ref genes
 gene_ref <- read.delim(inputRefFlat, header=F, comment.char="#")
 gene_ref_bare <- gene_ref[,c("V1","V3","V4","V5","V6")] ####### edit this based on file type
 colnames(gene_ref_bare) <- c("gene","chr","direction","start","end")
@@ -187,12 +187,17 @@ HMManno$exonCount <- 1
 HMManno$exonStarts <- HMManno$V2
 HMManno$exonEnds <- HMManno$V3
 
-HMMannoReady <- HMManno[,c("geneName","name","chrom","strand","txStart","txEnd","cdsStart","cdsEnd","exonCount","exonStarts","exonEnds")]
+HMManno <- HMManno[,c("geneName","name","chrom","strand","txStart","txEnd","cdsStart","cdsEnd","exonCount","exonStarts","exonEnds")]
+
+# Filter to only include unannotated TARs
+#TODO- check
+HMManno <- HMManno[ stringr::str_ends(HMManno$geneName,pattern = "-0"),]
 
 # export as GTF
 write.table(
-  HMMannoReady,
-  outFile,sep="\t",
+  HMManno,
+  outFile,
+  sep="\t",
   row.names=F,
   col.names = F,
   quote=F

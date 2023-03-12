@@ -1,4 +1,3 @@
-
 # Run HMM
 rule calcHMMbed:
 	input:
@@ -8,7 +7,7 @@ rule calcHMMbed:
 	threads:
 		CORES
 	params:
-		MEM="64G" # Change this if you are using a low-RAM machine
+		MEM = "64G" # Change this if you are using a low-RAM machine
 	shell:
 		"""
 		bash scripts/HMM.bash {input} {threads} {params.MEM} {MERGEBP} {THRESH} {wildcards.DATADIR}/{wildcards.sample}/TAR
@@ -18,11 +17,10 @@ rule calcHMMbed:
 #		Returns annotations with and without considering strandedness/direction
 rule calcHMMrefFlat:
 	input:
-		BEDGZ='{DATADIR}/{sample}/TAR/TAR_reads.bed.gz',
-		REFFLAT=GENES_GTF+".refFlat"
+		BEDGZ = '{DATADIR}/{sample}/TAR/TAR_reads.bed.gz',
+		REFFLAT= GENES_GTF + ".refFlat"
 	output:
-		# NODIR = '{DATADIR}/{sample}/TAR/TAR_reads.bed.gz.noDir.refFlat',
-		WITHDIR ='{DATADIR}/{sample}/TAR/TAR_reads.bed.gz.withDir.refFlat'
+		WITHDIR ='{DATADIR}/{sample}/TAR/TAR_reads.bed.gz.refFlat'
 	threads:
 		CORES
 	shell:
@@ -31,12 +29,12 @@ rule calcHMMrefFlat:
 		"""
 
 # Convert stranded annotations to gtf format
-rule HMM_refFlat_to_gtf_WITHDIR:
+rule HMM_refFlat_to_gtf:
 	input:
-		WITHDIR ='{DATADIR}/{sample}/TAR/TAR_reads.bed.gz.withDir.refFlat'
+		REFFLAT = '{DATADIR}/{sample}/TAR/TAR_reads.bed.gz.refFlat'
 	output:
-		WITHDIR ='{DATADIR}/{sample}/TAR/TAR_reads.bed.gz.withDir.refFlat.gtf'
+		GTF = '{DATADIR}/{sample}/TAR/TAR_reads.bed.gz.refFlat.gtf'
 	shell:
 		"""
-		Rscript scripts/convertRefFlatToGTF.R {input.WITHDIR}
+		Rscript scripts/convertRefFlatToGTF.R {input.REFFLAT}
 		"""

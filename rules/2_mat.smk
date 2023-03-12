@@ -6,72 +6,92 @@
 # Label .bam file with each HMM feature
 #TODO: add featureCounts exec to config
 #TODO: add temp() wrappers to bam and bai files
-rule tagReads_withDir:
+rule tagReads:
 	input:
-		TAR_GTF = '{DATADIR}/{sample}/TAR/TAR_reads.bed.gz.withDir.refFlat.gtf'
+		BAM = '{DATADIR}/{sample}/STARsolo/Aligned.sortedByCoord.dedup.out.bam',
+		TAR_GTF = '{DATADIR}/{sample}/TAR/TAR_reads.bed.gz.refFlat.gtf'
 	output:
-		OUT_BAM='{DATADIR}/{sample}/TAR/STARsolo/Aligned.sortedByCoord.dedup.out.bam.featureCounts.bam'
-	params:
-		IN_BAM = '{DATADIR}/{sample}/STARsolo/Aligned.sortedByCoord.dedup.out.bam'
+		BAM='{DATADIR}/{sample}/TAR/STARsolo/Aligned.sortedByCoord.dedup.out.bam.featureCounts.bam'
+	# params:
+	# 	IN_BAM = '{DATADIR}/{sample}/STARsolo/Aligned.sortedByCoord.dedup.out.bam'
 	threads:
 		CORES
 	log:
 		'{DATADIR}/{sample}/TAR/dropseq_tag.log'
-	shell:
-		"""
-		{DROPSEQ_EXEC}/TagReadWithGeneFunction\
-			I={params.IN_BAM}\
-			O={output.OUT_BAM}\
-			ANNOTATIONS_FILE={input.TAR_GTF}\
-			GENE_NAME_TAG=XT\
-			GENE_STRAND_TAG=GS\
-			USE_STRAND_INFO=true\
-			MAX_RECORDS_IN_RAM=10000000\
-			CREATE_INDEX=true 2> {log}
-		"""
+	run:
+		shell(
+			f"""
+			{UMITOOLS_EXEC} extract \
+			--extract-method=tag \
+			--tag-umi=UB \
+			--tag-cell=CB \
+			--gene-tag=XT \
+			--output-bam \
+			--input-bam {input.BAM} \
+			--genome-tag=XM \
+			--gtf {input.TAR_GTF} \
+			--output {output.BAM} \
+			--log2stderr > {log}
+			"""
+		)
+		#Old command which used DropSeqUtils
+		# f"""
+		# {DROPSEQ_EXEC}/TagReadWithGeneFunction\
+		# 	I={input.BAM}\
+		# 	O={output.BAM}\
+		# 	ANNOTATIONS_FILE={input.TAR_GTF}\
+		# 	GENE_NAME_TAG=XT\
+		# 	GENE_STRAND_TAG=GS\
+		# 	USE_STRAND_INFO=true\
+		# 	MAX_RECORDS_IN_RAM=10000000\
+		# 	CREATE_INDEX=true 2> {log}
+		# """
 
 rule sort_index_tagged_bam:
 	input:
 		IN_BAM = '{DATADIR}/{sample}/TAR/STARsolo/Aligned.sortedByCoord.dedup.out.bam.featureCounts.bam'
 	output:
-		OUT_BAM='{DATADIR}/{sample}/TAR/TAR_tagged_withDir.bam',
-		bamIndex='{DATADIR}/{sample}/TAR/TAR_tagged_withDir.bam.bai'
+		OUT_BAM='{DATADIR}/{sample}/TAR/TAR_tagged.bam',
+		bamIndex='{DATADIR}/{sample}/TAR/TAR_tagged.bam.bai'
 	threads:
 		CORES
 	shell:
 		"""
-		samtools sort -@ {threads} {input.IN_BAM} -o {output.OUT_BAM}
-		samtools index -@ {threads} {output.OUT_BAM}
+		{SAMTOOLS_EXEC} sort -@ {threads} {input.IN_BAM} -o {output.OUT_BAM}
+		{SAMTOOLS_EXEC} index -@ {threads} {output.OUT_BAM}
 		"""
 
 # Get counts matrix for HMM-annotated features
-rule extract_HMM_expression_withDir:
+rule extract_HMM_expression:
 	input:
-		BAM = '{DATADIR}/{sample}/TAR/TAR_tagged_withDir.bam'
+		BAM = '{DATADIR}/{sample}/TAR/TAR_tagged.bam'
 	output:
-		COUNTS='{DATADIR}/{sample}/TAR/TAR_expression_matrix_withDir.tsv.gz'
+		COUNT_MTX='{DATADIR}/{sample}/TAR/uTAR_matrix.mtx'
 	params:
-		BARCODES = '{DATADIR}/{sample}/STARsolo/Solo.out/GeneFull/filtered/barcodes.tsv.gz',
-		TMPDIR = TMPDIR
+		BARCODES = '{DATADIR}/{sample}/STARsolo/Solo.out/GeneFull/filtered/barcodes.tsv.gz'
+		# TMPDIR = TMPDIR
 	log:
 		# '{DATADIR}/{sample}/TAR/DropSeq_DigitalExpression.log'
-        '{DATADIR}/{sample}/TAR/umitools_count.log'
-	shell:
-        """
-		{UMITOOLS_EXEC} count \
-		--per-gene \
-		--extract-umi-method=tag \
-		--assigned-status-tag=XS \
-		--gene-tag=XT \
-		--cell-tag=CB \
-		--umi-tag=UB \
-		--per-cell \
-		--wide-format-cell-counts \
-		--log={log} \
-		-I {input.BAM} \
-		-E {log} \
-		-S {output.COUNTS}
-		"""
+		'{DATADIR}/{sample}/TAR/umitools_count.log'
+	run:
+		shell(
+			f"""
+			{UMITOOLS_EXEC} count \
+			--per-gene \
+			--extract-umi-method=tag \
+			--assigned-status-tag=XS \
+			--gene-tag=XT \
+			--cell-tag=CB \
+			--umi-tag=UB \
+			--multimapping-detection-method=NH \
+			--per-cell \
+			--wide-format-cell-counts \
+			--log={log} \
+			--stdin {input.BAM} \
+			--log {log} \
+			--stdout {output.COUNT_MTX}
+			"""
+		)
 
 		# """
 		# {DROPSEQ}/DigitalExpression\
@@ -91,18 +111,18 @@ rule extract_HMM_expression_withDir:
 
 
 # generate differentially expressed genes and uTARs
-rule getDiffFeatures:
-	input:
-		hmmFile='{DATADIR}/{sample}/TAR/TAR_expression_matrix_withDir.tsv.gz'
-	output:
-		diffFeatures='{DATADIR}/{sample}/TAR/diff_Expressed_Features.txt',
-		MTX_DIR=directory('{DATADIR}/{sample}/TAR/TAR_feature_bc_matrix'),
-		MTX_BC='{DATADIR}/{sample}/TAR/TAR_feature_bc_matrix/barcodes.tsv.gz',
-		MTX_FEAT='{DATADIR}/{sample}/TAR/TAR_feature_bc_matrix/features.tsv.gz',
-		MTX_MTX='{DATADIR}/{sample}/TAR/TAR_feature_bc_matrix/matrix.mtx.gz'
-	params:
-		geneFile='{DATADIR}/{sample}/STARsolo/Solo.out/GeneFull/filtered'
-	shell:
-		"""
-		Rscript scripts/analyzeExpressionMat.R {params.geneFile} {input.hmmFile}
-		"""
+# rule getDiffFeatures:
+# 	input:
+# 		hmmFile='{DATADIR}/{sample}/TAR/TAR_expression_matrix.tsv.gz'
+# 	output:
+# 		diffFeatures='{DATADIR}/{sample}/TAR/diff_Expressed_Features.txt',
+# 		MTX_DIR=directory('{DATADIR}/{sample}/TAR/TAR_feature_bc_matrix'),
+# 		MTX_BC='{DATADIR}/{sample}/TAR/TAR_feature_bc_matrix/barcodes.tsv.gz',
+# 		MTX_FEAT='{DATADIR}/{sample}/TAR/TAR_feature_bc_matrix/features.tsv.gz',
+# 		MTX_MTX='{DATADIR}/{sample}/TAR/TAR_feature_bc_matrix/matrix.mtx.gz'
+# 	params:
+# 		geneFile='{DATADIR}/{sample}/STARsolo/Solo.out/GeneFull/filtered'
+# 	shell:
+# 		"""
+# 		Rscript scripts/analyzeExpressionMat.R {params.geneFile} {input.hmmFile}
+# 		"""
