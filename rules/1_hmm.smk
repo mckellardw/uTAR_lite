@@ -15,17 +15,19 @@ rule convertToRefFlat:
 # Run HMM
 rule calcHMMbed:
 	input:
-		'{DATADIR}/{sample}/STARsolo/Aligned.sortedByCoord.dedup.out.bam' #need absolute path
+		BAM = '{DATADIR}/{sample}/STARsolo/Aligned.sortedByCoord.dedup.out.bam' #need absolute path
 	output:
-		temp('{DATADIR}/{sample}/TAR/TAR_reads.bed.gz')
+		BED = temp('{DATADIR}/{sample}/TAR/TAR_reads.bed.gz')
 	threads:
 		CORES
 	params:
 		MEM = "64G" # Change this if you are using a low-RAM machine
-	shell:
-		"""
-		bash scripts/HMM.bash {input} {threads} {params.MEM} {MERGEBP} {THRESH} {wildcards.DATADIR}/{wildcards.sample}/TAR
-		"""
+	run:
+		shell(
+			f"""
+			bash scripts/HMM.bash {input.BAM} {threads} {params.MEM} {MERGEBP} {THRESH} {wildcards.DATADIR}/{wildcards.sample}/TAR
+			"""
+		)
 
 # Generate annotations from HMM in refFlat format
 #		Returns annotations with and without considering strandedness/direction

@@ -24,15 +24,16 @@ MINCOV=${minCovReads}
 # PREFIX=`echo ${INPUT_BAM} | rev | cut -d / -f 1 | cut -d . -f 2- | rev`
 PREFIX="HMMout"
 
-TMPDIR=${OUTDIR}/${PREFIX}_HMM_features
+TMPDIR=${OUTDIR}/${PREFIX}
+#_HMM_features
 mkdir -p ${TMPDIR}
 
-exec > >(tee SingleCellHMM_Run_${TMPDIR}.log)
+exec > >(tee ${TMPDIR}.log)
 exec 2>&1
 echo "Path to SingleCellHMM.R:  	${PL}"
 echo "input .bam                	${INPUT_BAM}"
-echo "STARsolo output directory: 	${OUTDIR}"
-echo "tmp folder:                	${TMPDIR}"
+echo "output directory: 	        ${OUTDIR}"
+echo "tmp directory:              ${TMPDIR}"
 echo "number of threads:         	${CORE}"
 echo "memory usage:              	${MEM}"
 echo "minimum coverage:						${MINCOV}"
@@ -41,6 +42,7 @@ echo ""
 echo "Reads spanning over splicing junction will join HMM blocks"
 echo "To avoid that, split reads into small blocks before input to groHMM"
 echo "Spliting and sorting reads..."
+
 bedtools bamtobed -i ${INPUT_BAM} -split \
 | LC_ALL=C sort -k1,1V -k2,2n --buffer-size=${MEM} --parallel=${CORE} \
 | awk '{print $0}' \
@@ -55,28 +57,29 @@ echo ""
 echo "Running groHMM on each individual chromosome..."
 
 #Old code for running R
-# wait_a_second() {
-# 	joblist=($(jobs -p))
-#     while (( ${#joblist[*]} >= ${CORE} ))
-# 	    do
-# 	    sleep 1
-# 	    joblist=($(jobs -p))
-# 	done
-# }
+wait_a_second() {
+	joblist=($(jobs -p))
+    while (( ${#joblist[*]} >= ${CORE} ))
+	    do
+	    sleep 1
+	    joblist=($(jobs -p))
+	done
+}
 
-# for f in *.bed
-# do
-#   wait_a_second
-#   echo "    " ${f}
-#   R --vanilla --slave --args $(pwd) ${f}  < ${PL}/SingleCellHMM.R  > ${f}.log 2>&1 & pids+=($!)
-# done
-# wait "${pids[@]}"
+for f in *.bed
+do
+  wait_a_second
+  echo "    " ${f}
+  R --vanilla --slave --args $(pwd) ${f}  < ${PL}/SingleCellHMM.R  > ${f}.log 2>&1 & pids+=($!)
+done
+wait "${pids[@]}"
 
 # Parallelized:
 ## Use find command to find all the bed files in the current directory and its subdirectories.
 ## Pipe the output to parallel to run R commands in parallel.
-find . -name "*.bed" \
-| parallel -j ${CORE} 'echo "    " {}; R --vanilla --slave --args $(pwd) {} < ${CURDIR}/SingleCellHMM.R > {}.log 2>&1'
+#TODO- doesn't seem to be calling the R script properly?
+# find . -name "*.bed" \
+# | parallel -j ${CORE} 'echo "    " {}; R --vanilla --slave --args $(pwd) {} < ${PL}/SingleCellHMM.R > {}.log 2>&1'
 
 
 echo ""
