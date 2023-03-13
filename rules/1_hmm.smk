@@ -1,3 +1,17 @@
+# convert GTF to REFFlat, save in your cellranger reference
+# 	not run if REFFlat file exists -  will only need to run this once for each reference genome
+rule convertToRefFlat:
+	input:
+		GENES = GENES_GTF
+	output:
+		REFFLAT = GENES_GTF + ".refFlat"
+	shell:
+		"""
+		{GTFTOGENEPRED} -genePredExt -geneNameAsName2 {input.GENES} refFlat.tmp
+		paste <(cut -f 12 refFlat.tmp) <(cut -f 1-10 refFlat.tmp) > {output.REFFLAT}
+		rm refFlat.tmp
+		"""
+
 # Run HMM
 rule calcHMMbed:
 	input:

@@ -15,7 +15,7 @@ THRESH="${THRESH:-10000000}"
 CURDIR=`pwd` #snakemake directory
 PL="${PL:-${CURDIR}/scripts}"
 
-#can this samtools call be parallelized with -@ ?
+#TODO- change `THRESH` to be directly set, not based on the read depth (more interpretable/repeatable)
 reads=`samtools view -q 255 ${INPUT_BAM} | wc -l`
 echo "Number of aligned reads is ${reads}"
 minCovReads=`expr ${reads} / ${THRESH}`
@@ -52,7 +52,7 @@ find -name "*.bed" -size -1024k -delete
 wc chr*.bed -l > chr_read_count.txt
 
 echo ""
-echo "Start to run groHMM on each individual chromosome..."
+echo "Running groHMM on each individual chromosome..."
 
 #Old code for running R
 # wait_a_second() {
@@ -76,7 +76,7 @@ echo "Start to run groHMM on each individual chromosome..."
 ## Use find command to find all the bed files in the current directory and its subdirectories.
 ## Pipe the output to parallel to run R commands in parallel.
 find . -name "*.bed" \
-| parallel -j ${CORE} 'echo "    " {}; R --vanilla --slave --args $(pwd) {} < ${PL}/SingleCellHMM.R > {}.log 2>&1'
+| parallel -j ${CORE} 'echo "    " {}; R --vanilla --slave --args $(pwd) {} < ${CURDIR}/SingleCellHMM.R > {}.log 2>&1'
 
 
 echo ""
@@ -96,7 +96,7 @@ echo "Combining HMM output from all chromosomes..."
 cat *_HMM.bed_plus_merge${MERGEBP}  | awk 'BEGIN{OFS="\t"} {print $0, ".", ".", "+"}' > ${PREFIX}_merge${MERGEBP}
 cat *_HMM.bed_minus_merge${MERGEBP} | awk 'BEGIN{OFS="\t"} {print $0, ".", ".", "-"}' >> ${PREFIX}_merge${MERGEBP}
 
-mkdir toremove
+mkdir -p toremove
 for f in *_HMM.bed
 do
 	mv ${f}.sorted.bed ${f}_plus ${f}_minus ${f}_plus_merge${MERGEBP} ${f}_minus_merge${MERGEBP} toremove/.

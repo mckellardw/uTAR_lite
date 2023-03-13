@@ -83,7 +83,11 @@ num_cores <- as.numeric(args[3])
 
 refName <- unlist(strsplit(inputRefFlat,"/"))[length(unlist(strsplit(inputRefFlat,"/")))]
 # read in ref genes
-gene_ref <- read.delim(inputRefFlat, header=F, comment.char="#")
+gene_ref <- read.delim(
+  inputRefFlat,
+  header=F,
+  comment.char="#"
+)
 gene_ref_bare <- gene_ref[,c("V1","V3","V4","V5","V6")] ####### edit this based on file type
 colnames(gene_ref_bare) <- c("gene","chr","direction","start","end")
 gene_ref_bare$gene <- as.character(gene_ref_bare$gene)
@@ -92,7 +96,6 @@ gene_ref_bare$direction <- as.character(gene_ref_bare$direction)
 gene_ref_bare$start <- as.numeric(gene_ref_bare$start)
 gene_ref_bare$end <- as.numeric(gene_ref_bare$end)
 
-# read in Shao-Pei's file # 500 bp blocks merge, at least 5 reads
 input <- HMMbedFile
 HMManno <- read.delim(input, header=FALSE)
 HMManno_bare <- HMManno[,c("V1","V2","V3","V6")]
