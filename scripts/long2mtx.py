@@ -25,8 +25,20 @@ def convert_to_mtx(input_file, output_file, output_format):
     # save the 'gene' and 'cell' names as tsv.gz files
     gene_file = output_file.replace('.mtx', '_genes.tsv.gz')
     cell_file = output_file.replace('.mtx', '_cells.tsv.gz')
-    long_df[['gene']].drop_duplicates().to_csv(gene_file, sep='\t', index=False, compression='gzip')
-    long_df[['cell']].drop_duplicates().to_csv(cell_file, sep='\t', index=False, compression='gzip')
+    long_df[['gene']].drop_duplicates().to_csv(
+        gene_file, 
+        sep='\t', 
+        index=False, 
+        header=False,
+        compression='gzip'
+    )
+    long_df[['cell']].drop_duplicates().to_csv(
+        cell_file, 
+        sep='\t', 
+        index=False,
+        header=False,
+        compression='gzip'
+    )
 
     # factorize the 'gene' and 'cell' names
     long_df['gene'] = pd.factorize(long_df['gene'])[0]
