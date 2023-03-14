@@ -29,9 +29,14 @@ TAR.gtf$X9<-paste0(
   )
 TAR.gtf<-TAR.gtf[,1:9]
 
+outFile = stringr::str_replace(
+  string=inputRefFlat,
+  pattern = ".refFlat",
+  replacement = ".gtf"
+)
 write.table(
   TAR.gtf,
-  file=paste0(inputRefFlat,".gtf"),
+  file=outFile,
   row.names=F,
   col.names = F,
   quote=F,

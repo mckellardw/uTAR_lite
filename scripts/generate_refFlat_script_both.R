@@ -30,8 +30,11 @@ checkIfExistGene_noDir <- function(input,gene_ref){
   }
 }
 
-#TODO- Add description for this function
-checkIfExistGene2 <- function(input,gene_ref){
+#TODO- Add description for this function, and reqrite if possible...
+checkIfExistGene2 <- function(
+  input,
+  gene_ref
+){
   chrom <- input[[1]]
   startPos <- as.numeric(input[[2]])
   endPos <- as.numeric(input[[3]])
@@ -88,13 +91,13 @@ gene_ref <- read.delim(
   header=F,
   comment.char="#"
 )
-gene_ref_bare <- gene_ref[,c("V1","V3","V4","V5","V6")] ####### edit this based on file type
-colnames(gene_ref_bare) <- c("gene","chr","direction","start","end")
-gene_ref_bare$gene <- as.character(gene_ref_bare$gene)
-gene_ref_bare$chr <- as.character(gene_ref_bare$chr)
-gene_ref_bare$direction <- as.character(gene_ref_bare$direction)
-gene_ref_bare$start <- as.numeric(gene_ref_bare$start)
-gene_ref_bare$end <- as.numeric(gene_ref_bare$end)
+gene_ref <- gene_ref[,c("V1","V3","V4","V5","V6")] ####### edit this based on file type
+colnames(gene_ref) <- c("gene","chr","direction","start","end")
+gene_ref$gene <- as.character(gene_ref$gene)
+gene_ref$chr <- as.character(gene_ref$chr)
+gene_ref$direction <- as.character(gene_ref$direction)
+gene_ref$start <- as.numeric(gene_ref$start)
+gene_ref$end <- as.numeric(gene_ref$end)
 
 input <- HMMbedFile
 HMManno <- read.delim(input, header=FALSE)
@@ -105,11 +108,7 @@ HMManno_bare$direction <- as.character(HMManno_bare$direction)
 HMManno_bare$start <- as.numeric(HMManno_bare$start)
 HMManno_bare$end <- as.numeric(HMManno_bare$end)
 
-outFile=paste0(input,".noDir.","refFlat")#,refName)
-
 ########################################################
-
-df <- HMManno_bare
 
 if(!require("parallel")){
 	install.packages("parallel")
@@ -123,11 +122,11 @@ HMManno$inGene <- parApply(
   X=HMManno_bare,
   MARGIN=1,
   FUN=checkIfExistGene_noDir,
-  gene_ref=gene_ref_bare
+  gene_ref=gene_ref
 )
 stopCluster(clust)
 
-#HMManno$inGene <- apply(X=HMManno_bare,MARGIN=1,FUN=checkIfExistGene_noDir,gene_ref=gene_ref_bare)
+#HMManno$inGene <- apply(X=HMManno_bare,MARGIN=1,FUN=checkIfExistGene_noDir,gene_ref=gene_ref)
 
 # make dataframe into refFlat file format
 HMManno$geneName <- paste(HMManno$V1,"_",HMManno$V2,"_",HMManno$V3,"_",HMManno$V6,"_",HMManno$V7,"_",HMManno$inGene,sep="")
@@ -145,10 +144,13 @@ HMManno$exonEnds <- HMManno$V3
 
 HMMannoReady <- HMManno[,c("geneName","name","chrom","strand","txStart","txEnd","cdsStart","cdsEnd","exonCount","exonStarts","exonEnds")]
 
-# export as GTF
+#TODO: export as GTF
+outFile=paste0(stringr::str_remove(string = input, pattern=".bed.gz"),".noDir.","refFlat")
+cat("Writing unstranded TAR annotations (annotated & unannotated) to ", outFile, "\n")
 write.table(
   HMMannoReady,
-  outFile,sep="\t",
+  outFile,
+  sep="\t",
   row.names=F,
   col.names = F,
   quote=F
@@ -157,12 +159,10 @@ write.table(
 ###################################################################################
 #### include direction (strandedness) below
 ###################################################################################
-outFile=paste0(input,".withDir.","refFlat")#,refName)
 
-df <- HMManno_bare
 #HMManno_bare_sample <- df[sample(nrow(df),10),]
-#HMManno$inAnno <- apply(X=HMManno_bare,MARGIN=1,FUN=checkIfExist,exon_ref=gene_gtf_bare,gene_ref=gene_ref_bare)
-#HMManno$inGene <- apply(X=HMManno_bare,MARGIN=1,FUN=checkIfExistGene2,gene_ref=gene_ref_bare)
+#HMManno$inAnno <- apply(X=HMManno_bare,MARGIN=1,FUN=checkIfExist,exon_ref=gene_gtf_bare,gene_ref=gene_ref)
+#HMManno$inGene <- apply(X=HMManno_bare,MARGIN=1,FUN=checkIfExistGene2,gene_ref=gene_ref)
 
 library(parallel,quietly=T)
 
@@ -172,7 +172,7 @@ HMManno$inGene <- parApply(
   X=HMManno_bare,
   MARGIN=1,
   FUN=checkIfExistGene2,
-  gene_ref=gene_ref_bare
+  gene_ref=gene_ref
 )
 stopCluster(clust)
 
@@ -193,10 +193,15 @@ HMManno$exonEnds <- HMManno$V3
 HMManno <- HMManno[,c("geneName","name","chrom","strand","txStart","txEnd","cdsStart","cdsEnd","exonCount","exonStarts","exonEnds")]
 
 # Filter to only include unannotated TARs
-#TODO- check
-HMManno <- HMManno[ stringr::str_ends(HMManno$geneName,pattern = "-0"),]
+HMManno <- HMManno[ stringr::str_ends(HMManno$geneName,pattern = "_0"),] # Note- suffix changes to "-0" when loaded into Seurat
 
-# export as GTF
+if(nrow(HMManno) == 0){
+  message("No uTARs found!")
+}
+
+#TODO export as GTF
+outFile=paste0(stringr::str_remove(string = input, pattern=".bed.gz"),".withDir.","refFlat")
+cat("Writing stranded uTAR annotations to ", outFile, "\n")
 write.table(
   HMManno,
   outFile,

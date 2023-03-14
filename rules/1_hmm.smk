@@ -4,7 +4,7 @@ rule convertToRefFlat:
 	input:
 		GENES = GENES_GTF
 	output:
-		REFFLAT = GENES_GTF + ".refFlat"
+		REFFLAT = GENES_GTF.replace("gtf", ".refFlat")
 	shell:
 		"""
 		{GTFTOGENEPRED} -genePredExt -geneNameAsName2 {input.GENES} refFlat.tmp
@@ -36,20 +36,22 @@ rule calcHMMrefFlat:
 		BEDGZ = '{DATADIR}/{sample}/TAR/TAR_reads.bed.gz',
 		REFFLAT= GENES_GTF + ".refFlat"
 	output:
-		WITHDIR ='{DATADIR}/{sample}/TAR/TAR_reads.bed.gz.refFlat'
+		WITHDIR = '{DATADIR}/{sample}/TAR/TAR_reads.withDir.refFlat'
 	threads:
 		CORES
+	log:
+		'{DATADIR}/{sample}/TAR/calcHMMrefFlat.log'
 	shell:
 		"""
-		Rscript scripts/generate_refFlat_script_both.R {input.REFFLAT} {input.BEDGZ} {threads}
+		Rscript scripts/generate_refFlat_script_both.R {input.REFFLAT} {input.BEDGZ} {threads} | tee {log}
 		"""
 
 # Convert stranded annotations to gtf format
 rule HMM_refFlat_to_gtf:
 	input:
-		REFFLAT = '{DATADIR}/{sample}/TAR/TAR_reads.bed.gz.refFlat'
+		REFFLAT = '{DATADIR}/{sample}/TAR/TAR_reads.withDir.refFlat'
 	output:
-		GTF = '{DATADIR}/{sample}/TAR/TAR_reads.bed.gz.refFlat.gtf'
+		GTF = '{DATADIR}/{sample}/TAR/TAR_reads.withDir.gtf'
 	shell:
 		"""
 		Rscript scripts/convertRefFlatToGTF.R {input.REFFLAT}
