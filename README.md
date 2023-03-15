@@ -2,7 +2,7 @@
 Lightweight pipeline for discovering new features in single-cell and spatial transcriptomics data.
 
 ## Description
-This is a lightweight version of the workflow for [TAR-scRNA-seq](https://github.com/fw262/TAR-scRNA-seq) that just generates a count matrix for unannotated transcriptionally active regions (uTARs). We removed a few of the dependencies and sped up the runtimes.
+This is a lightweight version of the workflow for [TAR-scRNA-seq](https://github.com/fw262/TAR-scRNA-seq) by Michael Wang. `uTAR_lite` just generates a count matrix for unannotated transcriptionally active regions (uTARs). We removed a few of the dependencies and sped up the runtimes.
 
 Right now, it only works for datasets which have already been aligned with [STARsolo](https://github.com/alexdobin/STAR/blob/master/docs/STARsolo.md). All output files are saved into the output directory (```/path/to/sampleID/TAR```). 
 
@@ -130,3 +130,6 @@ All output files are stored in a directory inside of the STARsolo output  ```...
 - A list of differentially expressed uTARs and their labels based on BLASTn results in "**results_out/{sample}/{sample}\_TAR_diff_uTAR_Features_Labeled.txt**".
 - Results of the BLASTn analysis for differentially expressed uTARs in "**TAR_blastResults.txt**".
 
+# Citation:
+Please cite our [Nature Communications paper](http://www.nature.com/articles/s41467-021-22496-3):
+ Wang, M. F. Z. et al. Uncovering transcriptional dark matter via gene annotation independent single-cell RNA sequencing analysis. Nature Communications 12, 2158 (2021).
