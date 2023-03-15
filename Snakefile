@@ -55,5 +55,6 @@ rule makeOutDir:
 		mkdir {output}
 		"""
 
+# include: "rules/0_dedup.smk"
 include: "rules/1_hmm.smk"
 include: "rules/2_mat.smk"
