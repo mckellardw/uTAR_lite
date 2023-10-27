@@ -4,13 +4,15 @@ rule convertToRefFlat:
 	input:
 		GENES = GENES_GTF
 	output:
-		REFFLAT = GENES_GTF.replace("gtf", ".refFlat")
-	shell:
-		"""
-		{GTFTOGENEPRED} -genePredExt -geneNameAsName2 {input.GENES} refFlat.tmp
-		paste <(cut -f 12 refFlat.tmp) <(cut -f 1-10 refFlat.tmp) > {output.REFFLAT}
-		rm refFlat.tmp
-		"""
+		REFFLAT = GENES_GTF.replace(".gtf", ".refFlat")
+	run:
+		shell(
+			f"""
+			{GTFTOGENEPRED} -genePredExt -geneNameAsName2 {input.GENES} refFlat.tmp
+			paste <(cut -f 12 refFlat.tmp) <(cut -f 1-10 refFlat.tmp) > {output.REFFLAT}
+			rm refFlat.tmp
+			"""
+		)
 
 # Run HMM
 rule calcHMMbed:
@@ -34,7 +36,7 @@ rule calcHMMbed:
 rule calcHMMrefFlat:
 	input:
 		BEDGZ = '{DATADIR}/{sample}/TAR/TAR_reads.bed.gz',
-		REFFLAT= GENES_GTF + ".refFlat"
+		REFFLAT= GENES_GTF.replace(".gtf", ".refFlat")
 	output:
 		WITHDIR = '{DATADIR}/{sample}/TAR/TAR_reads.withDir.refFlat'
 	threads:
