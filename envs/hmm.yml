@@ -1,0 +1,19 @@
+name: hmm
+channels:
+  - bioconda
+  - conda-forge
+  - r
+  - defaults
+dependencies:
+  - bioconductor-grohmm
+  - bioconductor-rtracklayer
+  - r-readr
+  - r-dplyr
+  - r-stringr
+  - r-data.table
+  - r-matrix
+  - r-parallel
+  - r-r.utils
+  - samtools
+  - bedtools
+  - parallel

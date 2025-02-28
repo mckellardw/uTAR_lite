@@ -1,0 +1,9 @@
+name: umi_tools
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - pysam
+  - samtools
+  - umi_tools=1.1.5
+  

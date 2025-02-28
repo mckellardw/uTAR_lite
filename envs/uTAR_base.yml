@@ -1,0 +1,12 @@
+name: uTAR_base
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - pigz
+  - samtools
+  - pandas
+  - scipy
+  - subread
+  - argparse
