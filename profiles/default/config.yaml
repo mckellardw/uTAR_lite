@@ -1,0 +1,63 @@
+# Default profile configuration for Snakemake
+
+# Number of cores to use
+cores: 4
+
+# Default resources
+resources:
+  mem_mb: 4096
+
+# Default job properties
+job_properties:
+  threads: 1
+  time: "01:00:00"
+  partition: "short"
+
+# Rule-specific resources
+rule_resources:
+  makeOutDir:
+    threads: 1
+    mem_mb: 1024
+  utils_index_BAM:
+    threads: 4
+    mem_mb: 4096
+  umitools_dedupBAM:
+    threads: 4
+    mem_mb: 8192
+  umitools_indexDedupBAM:
+    threads: 4
+    mem_mb: 4096
+  1_convertToRefFlat:
+    threads: 1
+    mem_mb: 2048
+  1_calcHMMbed:
+    threads: 4
+    mem_mb: 65536
+  1_calcHMMrefFlat:
+    threads: 4
+    mem_mb: 8192
+  1_HMM_refFlat_to_gtf:
+    threads: 1
+    mem_mb: 2048
+  2_tagReads:
+    threads: 4
+    mem_mb: 8192
+  2_sort_index_tagged_bam:
+    threads: 4
+    mem_mb: 4096
+  2_extract_HMM_expression:
+    threads: 4
+    mem_mb: 8192
+  2_counts_long2mtx:
+    threads: 1
+    mem_mb: 2048
+  2_gzip_counts:
+    threads: 4
+    mem_mb: 2048
+
+# Default Snakemake arguments
+snakemake_args:
+  - --rerun-incomplete
+  - --printshellcmds
+  - --keep-going
+  - --jobs 4

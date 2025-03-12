@@ -1,0 +1,9 @@
+# Cluster configuration for the default profile
+
+__default__:
+  time: "01:00:00"
+  partition: "short"
+  mem_mb: 4096
+  cpus_per_task: 1
+  ntasks: 1
+  nodes: 1

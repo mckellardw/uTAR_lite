@@ -45,6 +45,9 @@ rule makeOutDir:
         "{DATADIR}/{sample}",
     output:
         directory("{DATADIR}/{sample}/TAR"),
+    resources:
+        threads=1,
+        mem_mb=1024
     shell:
         """
         mkdir {output}
@@ -63,11 +66,10 @@ rule utils_index_BAM:
         BAM="{BAM}",
     output:
         BAI="{BAM}.bai",
-    # wildcard_constraints:
-    #     BAM=".*\.(bam)$"
-    # resources:
-    threads: config["CORES"]
+    resources:
+        threads=config["CORES"],
+        mem_mb=4096
     shell:
         """
-        samtools index -@ {threads} {input.BAM}
+        samtools index -@ {resources.threads} {input.BAM}
         """

@@ -11,41 +11,40 @@ rule 2_tagReads:
 		TAR_GTF = '{DATADIR}/{sample}/TAR/TAR_reads.withDir.gtf'
 	output:
 		BAM=temp('{DATADIR}/{sample}/TAR/Aligned.sortedByCoord.dedup.out.bam.featureCounts.bam')
-	threads:
-		config['CORES']
+	resources:
+		threads=config['CORES'],
+		mem_mb=8192
 	log:
 		'{DATADIR}/{sample}/TAR/dropseq_tag.log'
-	run:
-		shell(
-			f"""
-			featureCounts \
-				-T {threads} \
-				-t exon \
-				-g gene_id \
-				-a {input.TAR_GTF} \
-				--largestOverlap \
-				--readExtension5 0 \
-				--readExtension3 0 \
-				-s 1 \
-				-M \
-				-o {DATADIR}/{wildcards.sample}/TAR/gene_assigned \
-				-R BAM \
-				{input.BAM} \
-			2> {log}
-			"""
-		)
-			# -o {output.BAM} \
+	shell:
+		"""
+		featureCounts \
+			-T {resources.threads} \
+			-t exon \
+			-g gene_id \
+			-a {input.TAR_GTF} \
+			--largestOverlap \
+			--readExtension5 0 \
+			--readExtension3 0 \
+			-s 1 \
+			-M \
+			-o {DATADIR}/{wildcards.sample}/TAR/gene_assigned \
+			-R BAM \
+			{input.BAM} \
+		2> {log}
+		"""
 
 rule 2_sort_index_tagged_bam:
 	input:
 		BAM = '{DATADIR}/{sample}/TAR/Aligned.sortedByCoord.dedup.out.bam.featureCounts.bam'
 	output:
 		BAM='{DATADIR}/{sample}/TAR/TAR_tagged.bam'
-	threads:
-		config['CORES']
+	resources:
+		threads=config['CORES'],
+		mem_mb=4096
 	shell:
 		"""
-		samtools sort -@ {threads} {input.BAM} -o {output.BAM}
+		samtools sort -@ {resources.threads} {input.BAM} -o {output.BAM}
 		"""
 
 # Get counts matrix for HMM-annotated features
@@ -66,6 +65,9 @@ rule 2_extract_HMM_expression:
 		err='{DATADIR}/{sample}/TAR/umitools_count.err'
     conda:
         f"{workflow.basedir}/envs/umi_tools.yml"
+	resources:
+		threads=config['CORES'],
+		mem_mb=8192
 	shell:
 		"""
 		umi_tools count --extract-umi-method=tag \
@@ -90,6 +92,9 @@ rule 2_counts_long2mtx:
 		MTX='{DATADIR}/{sample}/TAR/uTAR.mtx',
 		GENES='{DATADIR}/{sample}/TAR/uTAR_genes.tsv.gz',
 		CELLS='{DATADIR}/{sample}/TAR/uTAR_cells.tsv.gz'
+	resources:
+		threads=1,
+		mem_mb=2048
 	shell:
 		"""
 		python scripts/long2mtx.py \
@@ -104,10 +109,11 @@ rule 2_gzip_counts:
 		COUNT_MTX='{DATADIR}/{sample}/TAR/uTAR.mtx'
 	output:
 		COUNT_MTX='{DATADIR}/{sample}/TAR/uTAR.mtx.gz'
-	threads:
-		config['CORES']
+	resources:
+		threads=config['CORES'],
+		mem_mb=2048
 	shell:
 		"""
-		pigz -p{threads} {input.COUNT_MTX}
+		pigz -p{resources.threads} {input.COUNT_MTX}
 		"""
 
